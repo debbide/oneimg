@@ -65,7 +65,7 @@ func startSingBoxRuntime() (*singBoxRuntime, error) {
 				{
 					Type: constant.TypeVLESS,
 					Tag:  "vless-ws-in",
-					Options: option.VLESSInboundOptions{
+					Options: &option.VLESSInboundOptions{
 						ListenOptions: option.ListenOptions{
 							Listen:     &listenLocal,
 							ListenPort: singBoxVLESSListenPort,
@@ -84,7 +84,7 @@ func startSingBoxRuntime() (*singBoxRuntime, error) {
 				{
 					Type: constant.TypeTUIC,
 					Tag:  "tuic-in",
-					Options: option.TUICInboundOptions{
+					Options: &option.TUICInboundOptions{
 						ListenOptions: option.ListenOptions{
 							Listen:     &listenAll,
 							ListenPort: tuicPort,
@@ -109,7 +109,7 @@ func startSingBoxRuntime() (*singBoxRuntime, error) {
 				{
 					Type: constant.TypeDirect,
 					Tag:  "direct",
-					Options: option.DirectOutboundOptions{
+					Options: &option.DirectOutboundOptions{
 						DialerOptions: option.DialerOptions{
 							ConnectTimeout: badoption.Duration(10 * time.Second),
 							TCPKeepAlive:   badoption.Duration(15 * time.Second),
