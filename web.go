@@ -195,9 +195,13 @@ func buildTUICURL(name string) string {
 	host := resolveTUICServerName()
 	query := url.Values{
 		"allow_insecure":     {"1"},
+		"alpn":               {"h3"},
 		"congestion_control": {"bbr"},
+		"insecure":           {"1"},
+		"skip-cert-verify":   {"true"},
 		"sni":                {host},
 		"udp_relay_mode":     {"native"},
+		"version":            {"5"},
 	}.Encode()
 	return fmt.Sprintf(
 		"tuic://%s:%s@%s:%s?%s#%s",

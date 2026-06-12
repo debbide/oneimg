@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/netip"
 	"strconv"
+	"strings"
 	"time"
 
 	box "github.com/sagernet/sing-box"
@@ -98,6 +99,7 @@ func startSingBoxRuntime() (*singBoxRuntime, error) {
 							TLS: &option.InboundTLSOptions{
 								Enabled:     true,
 								ServerName:  resolveTUICServerName(),
+								ALPN:        badoption.Listable[string]{"h3"},
 								Certificate: badoption.Listable[string]{string(certPEM)},
 								Key:         badoption.Listable[string]{string(keyPEM)},
 							},
@@ -171,12 +173,30 @@ func singBoxVLESSPath() string {
 
 func resolveTUICServerName() string {
 	if TUICDomain != "" {
-		return stripScheme(TUICDomain)
+		return normalizeTUICHost(TUICDomain)
 	}
 	if publicIP := fetchPublicIPv4(); publicIP != "" {
-		return publicIP
+		return normalizeTUICHost(publicIP)
 	}
 	return "oneimg.local"
+}
+
+func normalizeTUICHost(value string) string {
+	host := stripScheme(value)
+	if cut := strings.IndexAny(host, "/?#"); cut >= 0 {
+		host = host[:cut]
+	}
+	if strings.HasPrefix(host, "[") {
+		if closing := strings.Index(host, "]"); closing >= 0 {
+			return host[1:closing]
+		}
+	}
+	if strings.Count(host, ":") == 1 {
+		if splitHost, _, err := net.SplitHostPort(host); err == nil && splitHost != "" {
+			return splitHost
+		}
+	}
+	return strings.TrimSpace(host)
 }
 
 func parseUint16Port(value string) (uint16, error) {
