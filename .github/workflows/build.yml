@@ -1,0 +1,62 @@
+name: Build and Compress
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - 'oneimg-linux'
+      - 'oneimg-linux-arm64'
+      - 'README.md'
+      - 'LICENSE'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+        cache: true
+
+    - name: Install UPX
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y upx-ucl
+
+    - name: Build and Compress AMD64
+      run: |
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o oneimg-linux
+        upx --best --lzma oneimg-linux
+
+    - name: Build and Compress ARM64
+      run: |
+        CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o oneimg-linux-arm64
+        upx --best --lzma oneimg-linux-arm64
+
+    - name: Commit and Push Binaries
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # 强制添加忽略清单中的二进制文件
+        git add -f oneimg-linux oneimg-linux-arm64
+        
+        # 如果没有变化则不提交
+        if git diff --staged --quiet; then
+          echo "No binary changes to commit."
+          exit 0
+        fi
+        
+        # [skip ci] 防止触发无限循环构建
+        git commit -m "🤖 auto-build: compile and UPX compress binaries [skip ci]"
+        git push
