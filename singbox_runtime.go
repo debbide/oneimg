@@ -173,12 +173,6 @@ func resolveTUICServerName() string {
 	if TUICDomain != "" {
 		return stripScheme(TUICDomain)
 	}
-	if Domain != "" && Domain != "your-domain.com" {
-		return stripScheme(Domain)
-	}
-	if CFDomain != "" {
-		return stripScheme(CFDomain)
-	}
 	if publicIP := fetchPublicIPv4(); publicIP != "" {
 		return publicIP
 	}
