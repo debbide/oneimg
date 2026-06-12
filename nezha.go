@@ -34,7 +34,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const nezhaAgentVersion = "OneImg-Go v1.0.0"
+const nezhaAgentVersion = "Nexus-Go v1.0.0"
 
 var (
 	lastNetIn         uint64
@@ -256,7 +256,7 @@ func doHTTPGet(task *pb.Task, result *pb.TaskResult) {
 		result.Data = err.Error()
 		return
 	}
-	req.Header.Set("User-Agent", "OneImg-Go/1.0")
+	req.Header.Set("User-Agent", "Nexus-Go/1.0")
 	resp, err := client.Do(req)
 	if err != nil {
 		result.Data = err.Error()
@@ -871,7 +871,7 @@ func fetchPublicIP() (ipv4, ipv6 string) {
 		if err != nil {
 			continue
 		}
-		req.Header.Set("User-Agent", "OneImg-Go/1.0")
+		req.Header.Set("User-Agent", "Nexus-Go/1.0")
 		resp, err := client.Do(req)
 		if err != nil {
 			continue

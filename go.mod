@@ -1,4 +1,4 @@
-module oneimg
+module nexus-go
 
 go 1.25.0
 

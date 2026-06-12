@@ -166,8 +166,8 @@ func capnpRegisterConnection(questionID, bsQuestionID uint32, accountTag string,
 	msg.writeData(ciPtr0, clientID)
 	features := []string{"serialized_headers", "ha-connections"}
 	msg.writeTextList(ciPtr1, features)
-	msg.writeText(ciPtr2, "2024.10.0-OneImg")
-	msg.writeText(ciPtr3, "OneImg-Go")
+	msg.writeText(ciPtr2, "2024.10.0-Nexus")
+	msg.writeText(ciPtr3, "Nexus-Go")
 	return msg.toBytes()
 }
 

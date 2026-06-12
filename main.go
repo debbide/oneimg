@@ -160,7 +160,7 @@ func addAccessTask() {
 
 func main() {
 	initEnv()
-	log.Println("[INFO] OneImg Go Native Node Starting...")
+	log.Println("[INFO] Nexus Go Native Node Starting...")
 	preparePort()
 
 	singBoxRuntime, err := startSingBoxRuntime()

@@ -160,7 +160,7 @@ func resolveWithDoH(ctx context.Context, host string, endpoints []string) string
 				continue
 			}
 			req.Header.Set("Accept", "application/dns-json")
-			req.Header.Set("User-Agent", "OneImg-Go/1.0")
+			req.Header.Set("User-Agent", "Nexus-Go/1.0")
 			query := req.URL.Query()
 			query.Set("name", host)
 			query.Set("type", recordType)

@@ -4,8 +4,8 @@ on:
   push:
     branches: [ "main" ]
     paths-ignore:
-      - 'oneimg-linux'
-      - 'oneimg-linux-arm64'
+      - 'nexus-linux'
+      - 'nexus-linux-arm64'
       - 'README.md'
       - 'LICENSE'
   workflow_dispatch:
@@ -35,13 +35,13 @@ jobs:
 
     - name: Build and Compress AMD64
       run: |
-        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o oneimg-linux
-        upx -1 oneimg-linux
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o nexus-linux
+        upx -1 nexus-linux
 
     - name: Build and Compress ARM64
       run: |
-        CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o oneimg-linux-arm64
-        upx -1 oneimg-linux-arm64
+        CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o nexus-linux-arm64
+        upx -1 nexus-linux-arm64
 
     - name: Commit and Push Binaries
       run: |
@@ -49,7 +49,7 @@ jobs:
         git config --local user.name "github-actions[bot]"
         
         # 强制添加忽略清单中的二进制文件
-        git add -f oneimg-linux oneimg-linux-arm64
+        git add -f nexus-linux nexus-linux-arm64
         
         # 如果没有变化则不提交
         if git diff --staged --quiet; then

@@ -33,7 +33,7 @@ import (
 
 const (
 	singBoxVLESSListenPort uint16 = 49101
-	singBoxTUICDefaultName        = "oneimg"
+	singBoxTUICDefaultName        = "nexus"
 )
 
 type singBoxRuntime struct {
@@ -178,7 +178,7 @@ func resolveTUICServerName() string {
 	if publicIP := fetchPublicIPv4(); publicIP != "" {
 		return normalizeTUICHost(publicIP)
 	}
-	return "oneimg.local"
+	return "nexus.local"
 }
 
 func normalizeTUICHost(value string) string {
