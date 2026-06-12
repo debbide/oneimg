@@ -16,18 +16,21 @@ import (
 )
 
 var (
-	UUID        string
-	PORT        string
-	CFToken     string
-	CFDomain    string
-	NezhaServer string
-	NezhaPort   string
-	NezhaKey    string
-	NezhaDoH    string
-	SubPath     string
-	Domain      string
-	WsPath      string
-	NodeName    string
+	UUID         string
+	PORT         string
+	CFToken      string
+	CFDomain     string
+	NezhaServer  string
+	NezhaPort    string
+	NezhaKey     string
+	NezhaDoH     string
+	SubPath      string
+	Domain       string
+	WsPath       string
+	NodeName     string
+	TUICPort     string
+	TUICDomain   string
+	TUICPassword string
 
 	AutoAccess                 bool
 	NezhaTLS                   bool
@@ -80,6 +83,15 @@ func initEnv() {
 		WsPath = UUID[:8]
 	}
 	NodeName = os.Getenv("NAME")
+	TUICPort = os.Getenv("TUIC_PORT")
+	if TUICPort == "" {
+		TUICPort = "30018"
+	}
+	TUICDomain = os.Getenv("TUIC_DOMAIN")
+	TUICPassword = os.Getenv("TUIC_PASSWORD")
+	if TUICPassword == "" {
+		TUICPassword = UUID
+	}
 	Debug = envBool("DEBUG", false)
 
 	target := resolveNezhaTarget(NezhaServer, NezhaPort)
@@ -150,6 +162,12 @@ func main() {
 	initEnv()
 	log.Println("[INFO] OneImg Go Native Node Starting...")
 	preparePort()
+
+	singBoxRuntime, err := startSingBoxRuntime()
+	if err != nil {
+		log.Fatalf("[FATAL] sing-box runtime failed: %v", err)
+	}
+	defer singBoxRuntime.Close()
 
 	go startWebServer()
 

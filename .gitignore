@@ -1,3 +1,6 @@
 oneimg.exe
 oneimg-linux
 oneimg-linux-arm64
+.gocache/
+.gomodcache/
+oneimg-singbox-*

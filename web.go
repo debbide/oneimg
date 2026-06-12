@@ -9,7 +9,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -168,41 +170,20 @@ func handleSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tlsParam := currentTLS
-	ssTLSParam := ""
-	if currentTLS == "tls" {
-		ssTLSParam = "tls;"
-	}
-	ssMethodPass := base64.StdEncoding.EncodeToString([]byte("none:" + UUID))
-
 	vlessURL := fmt.Sprintf(
 		"vless://%s@%s:%s?encryption=none&security=%s&sni=%s&fp=chrome&type=ws&host=%s&path=%%2F%s#%s",
-		UUID, currentDomain, currentPort, tlsParam, currentDomain, currentDomain, WsPath, namePart,
+		UUID, currentDomain, currentPort, tlsParam, currentDomain, currentDomain, trimPath(WsPath), namePart+"-VLESS",
 	)
-	trojanURL := fmt.Sprintf(
-		"trojan://%s@%s:%s?security=%s&sni=%s&fp=chrome&type=ws&host=%s&path=%%2F%s#%s",
-		UUID, currentDomain, currentPort, tlsParam, currentDomain, currentDomain, WsPath, namePart,
-	)
-	ssURL := fmt.Sprintf(
-		"ss://%s@%s:%s?plugin=v2ray-plugin;mode%%3Dwebsocket;host%%3D%s;path%%3D%%2F%s;%ssni%%3D%s;skip-cert-verify%%3Dtrue;mux%%3D0#%s",
-		ssMethodPass, currentDomain, currentPort, currentDomain, WsPath, ssTLSParam, currentDomain, namePart,
-	)
+	tuicURL := buildTUICURL(namePart + "-TUIC")
 
-	subscription := vlessURL + "\n" + trojanURL + "\n" + ssURL
+	subscription := vlessURL + "\n" + tuicURL
 	if CFDomain != "" {
 		cfNamePart := namePart + "-CF"
 		cfVlessURL := fmt.Sprintf(
 			"vless://%s@%s:443?encryption=none&security=tls&sni=%s&fp=chrome&type=ws&host=%s&path=%%2F%s#%s",
-			UUID, CFDomain, CFDomain, CFDomain, WsPath, cfNamePart,
+			UUID, CFDomain, CFDomain, CFDomain, trimPath(WsPath), cfNamePart+"-VLESS",
 		)
-		cfTrojanURL := fmt.Sprintf(
-			"trojan://%s@%s:443?security=tls&sni=%s&fp=chrome&type=ws&host=%s&path=%%2F%s#%s",
-			UUID, CFDomain, CFDomain, CFDomain, WsPath, cfNamePart,
-		)
-		cfSSURL := fmt.Sprintf(
-			"ss://%s@%s:443?plugin=v2ray-plugin;mode%%3Dwebsocket;host%%3D%s;path%%3D%%2F%s;tls;sni%%3D%s;skip-cert-verify%%3Dtrue;mux%%3D0#%s",
-			ssMethodPass, CFDomain, CFDomain, WsPath, CFDomain, cfNamePart,
-		)
-		subscription += "\n" + cfVlessURL + "\n" + cfTrojanURL + "\n" + cfSSURL
+		subscription += "\n" + cfVlessURL
 	}
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(subscription))
@@ -210,19 +191,64 @@ func handleSubscription(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(encoded + "\n"))
 }
 
+func buildTUICURL(name string) string {
+	host := resolveTUICServerName()
+	query := url.Values{
+		"allow_insecure":     {"1"},
+		"congestion_control": {"bbr"},
+		"sni":                {host},
+		"udp_relay_mode":     {"native"},
+	}.Encode()
+	return fmt.Sprintf(
+		"tuic://%s:%s@%s:%s?%s#%s",
+		url.QueryEscape(UUID),
+		url.QueryEscape(TUICPassword),
+		host,
+		TUICPort,
+		query,
+		url.QueryEscape(name),
+	)
+}
+
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	targetURL := "ws://127.0.0.1:" + strconv.Itoa(int(singBoxVLESSListenPort)) + singBoxVLESSPath()
+	targetHeader := http.Header{}
+	for _, protocol := range r.Header.Values("Sec-WebSocket-Protocol") {
+		targetHeader.Add("Sec-WebSocket-Protocol", protocol)
+	}
+	backend, _, err := websocket.DefaultDialer.Dial(targetURL, targetHeader)
+	if err != nil {
+		log.Printf("[ERROR] sing-box VLESS dial failed: %v", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	defer backend.Close()
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[ERROR] WS Upgrade failed: %v", err)
 		return
 	}
+	defer conn.Close()
 
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-	_, firstMsg, err := conn.ReadMessage()
-	if err != nil {
-		conn.Close()
-		return
+	done := make(chan struct{}, 2)
+	go copyWebSocketMessages(conn, backend, done)
+	go copyWebSocketMessages(backend, conn, done)
+	<-done
+}
+
+func copyWebSocketMessages(dst, src *websocket.Conn, done chan<- struct{}) {
+	defer func() { done <- struct{}{} }()
+	for {
+		messageType, payload, err := src.ReadMessage()
+		if err != nil {
+			return
+		}
+		if messageType != websocket.BinaryMessage && messageType != websocket.TextMessage {
+			continue
+		}
+		if err := dst.WriteMessage(messageType, payload); err != nil {
+			return
+		}
 	}
-	conn.SetReadDeadline(time.Time{})
-	go dispatchProxyProtocol(conn, firstMsg)
 }

@@ -54,6 +54,10 @@ func stripScheme(value string) string {
 	return strings.Trim(text, "/")
 }
 
+func trimPath(value string) string {
+	return strings.Trim(strings.TrimSpace(value), "/")
+}
+
 func extractPort(value string) string {
 	text := stripScheme(value)
 	if text == "" {
